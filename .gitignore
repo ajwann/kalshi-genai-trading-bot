@@ -1,0 +1,192 @@
+# -----------------------------------------------------------------------------
+# Python Environment & Build Artifacts
+# -----------------------------------------------------------------------------
+# Byte-compiled / optimized / setuptools files
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual environment
+.venv/
+venv/
+env/
+/bin/
+/include/
+/lib/
+/lib64/
+/Scripts/
+pip-log.txt
+
+# Installer logs
+*.log
+*.egg
+
+# -----------------------------------------------------------------------------
+# Project-Specific Configuration & Secrets (Crucial for Security)
+# -----------------------------------------------------------------------------
+# Kalshi Bot Specific Files
+# The file containing the sensitive RSA private key for Kalshi
+kalshi_private_key 
+
+# Local environment variables and secrets (Do NOT commit these)
+.env
+.flaskenv
+
+# API Keys and tokens
+*.key
+*.pem
+*.p12
+
+# -----------------------------------------------------------------------------
+# Testing and Coverage
+# -----------------------------------------------------------------------------
+.pytest_cache/
+htmlcov/
+.coverage
+
+# -----------------------------------------------------------------------------
+# Operating System & Editor Files
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.#*
+*.swp
+
+# IDE and Editor Files
+# VS Code
+.vscode/
+
+# IntelliJ/PyCharm
+.idea/
+
+# -----------------------------------------------------------------------------
+# Cloud Function/Serverless Artifacts
+# -----------------------------------------------------------------------------
+# Folders created by deployment/packaging tools
+.gcloud/
+.serverless/
+
+# Ignore any file or directory name containing "private_key"
+*private_key*
+*api_key*
+
+# Python-specific ignores
+*pycache*
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+env/
+ENV/
+.venv/
+
+# Package management
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+*.egg-info/
+
+# Jupyter/IPython
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# PyCharm/IDE
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+
+# Testing and coverage
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+.tox/
+.coverage
+
+# Common private key extensions (extra safety)
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa
+id_dsa
+id_ed25519
+*.p12
+*.jks
+*.keystore
+
+# Environment variables and secrets - ignore .env files at any level
+# Root-level .env files
+.env
+.env.local
+.env.*.local
+
+# .env files in any subdirectory (e.g., backend/.env, frontend/.env.test, etc.)
+**/.env
+**/.env.local
+**/.env.*.local
+*.env
+
+# Optional: ignore local config overrides
+config.local.py
+settings.local.py
+
+# === Vim-related temporary files ===
+# Swap files
+.*.swp
+.*.swo
+.*.swx
+
+# Backup files (if backup is enabled)
+*~
+
+# Undo files (if persistent undo is enabled)
+.*.un~
+
+# Vim session files
+Session.vim
+.vim
+
+# Netrw history/bookmarks
+.netrwhist

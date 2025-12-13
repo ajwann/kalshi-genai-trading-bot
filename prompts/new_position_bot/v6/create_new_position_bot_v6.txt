@@ -1,0 +1,16 @@
+Create a Grok 4.1 powered trading bot named “New Position Bot”, that will trade on Kalshi. Your instructions are separated into two sections below; “General bot design and architecture”, and “GenAI prompt creation”. Read all of the documentation at “https://docs.kalshi.com” and “https://docs.x.ai/docs/“ before generating the code. The Kalshi demo environment URL is “https://demo-api.kalshi.co/trade-api/v2”.
+
+General bot design and architecture:
+
+Make the bot stateless, so it can be run on Google Cloud Platform as a Cloud Function. The bot should also be able to run locally, while logging to standard out. Use Python 3.13.11. Use environment variables for the Kalshi API key and private key. Use enforcement variables for the Grok integration so that users can switch between Grok models. The bot should call the Kalshi demo environment API, but that base API URL should be configurable via an environment variable in case users want to call the production Kalshi environment.
+
+The “New Position Bot” bot should run every hour, and should analyze active/open markets newly created in the past hour in which it doesn’t currently have a position. This hour “look back period” should be configurable via an environment variable, but default to an hour. When it finds a market in which it doesn’t currently have a position, it should make an API call to Grok, and ask the Grok 4.1 model which positions in that market to take, if any. 
+
+Create unit tests, integration tests, and functional/end-to-end tests using Pytest. Ensure the bot has detailed logging. The environment variables should be named as follows; KALSHI_API_KEY, KALSHI_PRIVATE_KEY, KALSHI_BASE_URL, LOOKBACK_HOURS, GROK_MODEL, XAI_API_KEY.
+
+GenAI prompt creation: 
+
+Generate a “role-based” prompt that the trading bot can send to Grok 4.1. The prompt should tell Grok it’s an expert in professional prediction market trading like Domer, and needs to perform online research to become an expert in a market before taking a position. This prompt should instruct Grok to respond with a JSON object containing two key/value pairs. One key should be “market _id”, with a value of the unique identifier of the market it records we enter. The other key should be “explanation”, with a value that’s a textual explanation of why this particular market was chosen. Here is an example {“market_id”: “123”, explanation”: “I think X will happen based on…”}. The “New Position Bot” should parse this JSON response. If Grok does not recommend that any position be taken, the values returned for the “market_id” and “description” key should be null. Here is an example {“market_id”: null, “description”: null}. The JSON returned by Grok must be RFC 8259 compliant.
+
+The “New Position Bot” bot should purchase any positions recommended by Grok’s response.
+
