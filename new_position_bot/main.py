@@ -15,7 +15,7 @@ def run_bot_logic():
     kalshi_base_url = get_env_var("KALSHI_BASE_URL", "https://demo-api.kalshi.co")
     kalshi_api_key = get_env_var("KALSHI_API_KEY", required=True)
     lookback_hours = int(get_env_var("LOOKBACK_HOURS", "1"))
-    grok_model = get_env_var("GROK_MODEL", "grok-beta")
+    grok_model = get_env_var("GROK_MODEL", "grok-4-1-fast-reasoning")
     xai_api_key = get_env_var("XAI_API_KEY", required=True)
     
     try:
@@ -37,7 +37,7 @@ def run_bot_logic():
         # Extract tickers of current positions to filter
         held_tickers = {p['ticker'] for p in current_positions}
         
-        logger.info(f"Found {len(new_markets)} new active markets.")
+        logger.info(f"Found {len(new_markets)} new active markets over the past {lookback_hours} hours.")
         
         for market in new_markets:
             ticker = market['ticker']

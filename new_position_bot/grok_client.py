@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class GrokClient:
-    def __init__(self, api_key: str, model: str = "grok-beta"):
+    def __init__(self, api_key: str, model: str = "grok-4-1-fast-reasoning"):
         self.api_key = api_key
         self.model = model
         self.base_url = "https://api.x.ai/v1/chat/completions"
@@ -32,9 +32,9 @@ class GrokClient:
             f"Category: {market_data.get('category')}\n"
             f"Current Yes Price: {market_data.get('yes_ask', 'N/A')}\n\n"
             "If you recommend a trade, provide the ticker and a brief explanation. "
-            "If not, return null for both."
+            "If not, return null for ticker and a brief explanation."
             "Example Success: {\"ticker\": \"KX-123\", \"explanation\": \"Odds diverge from polling data.\"}\n"
-            "Example Pass: {\"ticker\": null, \"explanation\": null}"
+            "Example Pass: {\"ticker\": null, \"explanation\": \"Not enough information\"}"
         )
 
         payload = {
@@ -57,6 +57,7 @@ class GrokClient:
             response.raise_for_status()
             result = response.json()
             content = result['choices'][0]['message']['content']
+            logger.info(f"Grok response content: {content}")
             
             # Clean up markdown code blocks if present
             if content.startswith("```json"):
