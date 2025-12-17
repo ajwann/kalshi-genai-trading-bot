@@ -96,7 +96,7 @@ class KalshiClient:
         data = self._request("GET", "/portfolio/positions")
         return data.get("market_positions", [])
 
-    def create_market_order(self, ticker: str, side: str = "yes", count: int = 1, price: int = 99):
+    def create_market_order(self, ticker: str, side: str = "yes", count: int = 1, price: int = None):
         """Places a market order."""
         payload = {
             "ticker": ticker,
@@ -104,8 +104,8 @@ class KalshiClient:
             "type": "market",
             "side": side,
             "count": count,
-            "yes_price": price, # TODO: need to get the bid or ask price from the /market endpoint, also need to send the /market endpoint response to Grok
-            "cancel_order_on_pause": true,
+            "yes_price": price, 
+            "cancel_order_on_pause": True,
             "client_order_id": str(int(time.time() * 1000000)) # Unique ID
         }
         logger.info(f"Placing order: {payload}")

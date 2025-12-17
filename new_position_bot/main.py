@@ -31,22 +31,25 @@ def run_bot_logic():
     # 3. Fetch Data
     try:
         new_markets = kalshi.get_active_markets(created_after_hours=lookback_hours)
+        viable_new_markets = [m for m in new_markets if (m['yes_ask'] < 100 and m['no_ask'] < 100)]
         current_positions = kalshi.get_positions()
         logger.info(f"Found {len(current_positions)} current positions.")
         
         # Extract tickers of current positions to filter
         held_tickers = {p['ticker'] for p in current_positions}
         
-        logger.info(f"Found {len(new_markets)} new active markets over the past {lookback_hours} hours.")
+        logger.info(f"Found {len(viable_new_markets)} viable new active markets over the past {lookback_hours} hours.")
         
-        for market in new_markets:
+        for market in viable_new_markets:
             ticker = market['ticker']
             
             if ticker in held_tickers:
                 logger.info(f"Skipping {ticker}, already held.")
-                continue
+                # TODO: block 1, uncomment after testing
+                #continue
+                # end block 1
 
-            logger.info(f"Analyzing {ticker}: {market.get('title')}")
+            logger.info(f"Analyzing {ticker}: title: {market.get('title')}, yes_ask: {market.get('yes_ask')}, no_ask: {market.get('no_ask')}")
             
             # 4. Consult Grok
             recommendation = grok.analyze_market(market)
@@ -54,13 +57,15 @@ def run_bot_logic():
             rec_ticker = recommendation.get("ticker")
             explanation = recommendation.get("explanation")
             
-            if rec_ticker and rec_ticker == ticker:
+            #TODO: uncomment below line after testing
+            if 1 == 1: #rec_ticker and rec_ticker == ticker:
                 logger.info(f"Grok recommends BUY on {ticker}. Reason: {explanation}")
                 
                 # 5. Execute Trade
                 try:
                     # Defaulting to Buying 1 Yes Contract
-                    order_response = kalshi.create_market_order(ticker, side="yes", count=1)
+                    logger.info(f"About to buy 1 yes contract for {ticker} at price {market.get('yes_ask')}")
+                    order_response = kalshi.create_market_order(ticker, side="yes", count=1, price=market.get('yes_ask'))
                     logger.info(f"Order placed successfully: {order_response}")
                 except Exception as trade_err:
                     logger.error(f"Failed to place order for {ticker}: {trade_err}")
