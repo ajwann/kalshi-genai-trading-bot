@@ -20,7 +20,7 @@ def get_private_key() -> str:
     2. GCP Secret Manager (if configured and file not found)
     """
     # 1. Try local file
-    local_key_path = "kalshi_private_key"
+    local_key_path = "../kalshi_private_key"
     if os.path.exists(local_key_path):
         logger.info("Loading private key from local file.")
         with open(local_key_path, "r") as f:
