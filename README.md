@@ -1,5 +1,10 @@
 # Kalshi GenAI Trading Bot
-This is a vibe coded Generative AI prediction market trading bot. The goal of this experiment is to create a role prompt for an LLM (in this case Grok) to make it into a professional prediction market trader. Currently, v1 of this project only has a single bot, which takes new positions. Over time, I plan to add another both for re-evaluating and selling existing positions.
+A vibe coded Generative AI prediction market trading bot. The goal of this experiment is to create a role prompt for an LLM (in this case Grok) to make it into a professional prediction market trader. Currently, v1 of this project only has a single bot, which takes new positions. Over time, I plan to add another both for re-evaluating and selling existing positions.
+
+## IMPORTANT RISK DISCLOSURE AND DISCLAIMER
+BY ACCESSING, DOWNLOADING, INSTALLING, OR USING THIS SOFTWARE (THE "SOFTWARE"), YOU ACKNOWLEDGE AND AGREE THAT YOU HAVE READ, UNDERSTOOD, AND ACCEPT THE TERMS OF THIS DISCLAIMER. IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE. The Software is provided strictly on an experimental, "as is" and "as available" basis, solely for educational, research, and developmental purposes. It is not intended for production use, live trading, or any commercial application.
+* Not Financial Advice: The Software does not constitute, and must not be relied upon as, investment, financial, trading, tax, legal, or any other professional advice. No fiduciary relationship is created between you and the developers, contributors, or distributors of the Software.
+* Use at Your Own Risk: All use of the Software, including any decisions to trade or invest based on its output, functionality, or data, is entirely at your own discretion and sole risk. You are solely responsible for evaluating the suitability of any trading strategy, signal, or action.
 
 ## Getting started with the New Position Bot
 1. Clone the repo.
@@ -10,13 +15,13 @@ This is a vibe coded Generative AI prediction market trading bot. The goal of th
 5. In the project root, run `python main.py`.
 
 ## New Position Bot design notes
-*Vibe coded: As this bot will use an LLM to make decisions surrounding prediction market trades, it seemed appropriate to also have the LLM write the initial code for the project. The many iterations of prompts used to generate this codebase are found in `/prompts`.
-*Role prompting: The prompt sent to the LLM tells it that it's a professional prediction market trader, in the hopes of enhancing the output quality. 
-*Serverless: The bot is designed to run as two serverless functions on Google Cloud Platform, one to place new trades and one to exit markets. By default it runs hourly, and looks at all existing markets in which it has not yet taken a position. If it finds a market in which it has not taken a position, it will ask the LLM if it should take a position, and act on that decision. 
+* Vibe coded: As this bot will use an LLM to make decisions surrounding prediction market trades, it seemed appropriate to also have the LLM write the initial code for the project. The many iterations of prompts used to generate this codebase are found in `/prompts`.
+* Role prompting: The prompt sent to the LLM tells it that it's a professional prediction market trader, in the hopes of enhancing the output quality. 
+* Serverless: The bot is designed to run as two serverless functions on Google Cloud Platform, one to place new trades and one to exit markets. By default it runs hourly, and looks at all existing markets in which it has not yet taken a position. If it finds a market in which it has not taken a position, it will ask the LLM if it should take a position, and act on that decision. 
 
 ### Why Grok? 
-*X.com data access: With recent Terms of Service updates, X has restricted which models can access it's data to just Grok. As prediction market trades are very much based on real-time data, I believe this access is critical for deciding which markets to enter and exit.
-*Extensibility: The xAI API is designed to be interchangeable with ChatGPT and Gemini, making it easy to swap Grok out in the future. 
+* X.com data access: With recent Terms of Service updates, X has restricted which models can access it's data to just Grok. As prediction market trades are very much based on real-time data, I believe this access is critical for deciding which markets to enter and exit.
+* Extensibility: The xAI API is designed to be interchangeable with ChatGPT and Gemini, making it easy to swap Grok out in the future. 
 
 ## New Position Bot file breakdown 
 1. Main.py: Entry point that calls the Kalshi and Grok clients.
