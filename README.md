@@ -1,5 +1,11 @@
 # Kalshi GenAI Trading Bot
-This is a vibe coded Generative AI prediction market trading bot. The goal of this experiment is to create a role prompt for an LLM (in this case Grok) to make it into a professional prediction market trader. Currently, v1 of this project only has a single bot, which takes new positions. Over time, I plan to add another both for re-evaluating and selling existing positions.
+A vibe coded Generative AI prediction market trading bot. The goal of this experiment is to create a role prompt for an LLM (in this case Grok) to make it into a professional prediction market trader. Currently, v1 of this project only has a single bot, which takes new positions. Over time, I plan to add another both for re-evaluating and selling existing positions.
+
+## IMPORTANT RISK DISCLOSURE AND DISCLAIMER
+BY ACCESSING, DOWNLOADING, INSTALLING, OR USING THIS SOFTWARE (THE "SOFTWARE"), YOU ACKNOWLEDGE AND AGREE THAT YOU HAVE READ, UNDERSTOOD, AND ACCEPT THE TERMS OF THIS DISCLAIMER. IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE.
+* The Software is provided strictly on an experimental, "as is" and "as available" basis, solely for educational, research, and developmental purposes. It is not intended for production use, live trading, or any commercial application.
+* Not Financial Advice: The Software does not constitute, and must not be relied upon as, investment, financial, trading, tax, legal, or any other professional advice. No fiduciary relationship is created between you and the developers, contributors, or distributors of the Software.
+* Use at Your Own Risk: All use of the Software, including any decisions to trade or invest based on its output, functionality, or data, is entirely at your own discretion and sole risk. You are solely responsible for evaluating the suitability of any trading strategy, signal, or action.
 
 ## Getting started with the New Position Bot
 1. Clone the repo.
