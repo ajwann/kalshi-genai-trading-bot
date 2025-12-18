@@ -53,26 +53,17 @@ class GrokClient:
         }
 
         try:
-            # TODO block 1: uncomment after testing complete
-            #response = requests.post(self.base_url, json=payload, headers=headers)
-            #response.raise_for_status()
-            #result = response.json()
-            #content = result['choices'][0]['message']['content']
-            #logger.info(f"Grok response content: {content}")
+            response = requests.post(self.base_url, json=payload, headers=headers)
+            response.raise_for_status()
+            result = response.json()
+            content = result['choices'][0]['message']['content']
+            logger.info(f"Grok response content: {content}")
             
             # Clean up markdown code blocks if present
-            #if content.startswith("```json"):
-            #    content = content.replace("```json", "").replace("```", "")
-            #    
-            # end block 1
-            
-            # TODO block 2: delete me after testing complete
-            content = {"ticker": "KXQUICKSETTLE-25DEC17H0620-3", "explanation": "testing, please finish TODO's from grok_client"}
-            return content
-            # end block 2 
-            # TODO block 3: uncomment after testing complete
-            #return json.loads(content)
-            # end block 3
+            if content.startswith("```json"):
+                content = content.replace("```json", "").replace("```", "")
+                
+            return json.loads(content)
         except json.JSONDecodeError:
             logger.error(f"Failed to parse Grok response: {content}")
             return {"ticker": None, "explanation": "JSON Error"}

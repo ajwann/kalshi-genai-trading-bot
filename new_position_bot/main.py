@@ -45,9 +45,7 @@ def run_bot_logic():
             
             if ticker in held_tickers:
                 logger.info(f"Skipping {ticker}, already held.")
-                # TODO: block 1, uncomment after testing
-                #continue
-                # end block 1
+                continue
 
             logger.info(f"Analyzing {ticker}: title: {market.get('title')}, yes_ask: {market.get('yes_ask')}, no_ask: {market.get('no_ask')}")
             
@@ -57,8 +55,7 @@ def run_bot_logic():
             rec_ticker = recommendation.get("ticker")
             explanation = recommendation.get("explanation")
             
-            #TODO: uncomment below line after testing
-            if 1 == 1: #rec_ticker and rec_ticker == ticker:
+            if rec_ticker and rec_ticker == ticker:
                 logger.info(f"Grok recommends BUY on {ticker}. Reason: {explanation}")
                 
                 # 5. Execute Trade
