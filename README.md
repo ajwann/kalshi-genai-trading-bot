@@ -7,6 +7,7 @@ BY ACCESSING, DOWNLOADING, INSTALLING, OR USING THIS SOFTWARE (THE "SOFTWARE"), 
 * Use at Your Own Risk: All use of the Software, including any decisions to trade or invest based on its output, functionality, or data, is entirely at your own discretion and sole risk. You are solely responsible for evaluating the suitability of any trading strategy, signal, or action.
 
 ## Getting started with the New Position Bot
+0. Create an account on the [Kalshi demo environment](https://help.kalshi.com/account/demo-account).
 1. Clone the repo.
 2. Copy your Kalshi private key pem to the root directory, and name it "kalshi_private_key".
 3. Rename the .env.example file to .env, and add your Kalshi API key and Grok API key. Edit the other ENV variables as desired.
