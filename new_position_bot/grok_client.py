@@ -17,24 +17,29 @@ class GrokClient:
         """
         
         system_prompt = (
-            "You are an expert prediction market trader, similar to 'Domer'. "
-            "You analyze market metadata to find high-probability opportunities. "
-            "You need to perform online research to become an expert in a market before taking a position. "
-            "Respond ONLY with a valid RFC 8259 JSON object containing exactly two keys: "
-            "'ticker' (string or null) and 'explanation' (string or null)."
+        "You are an expert prediction market trader, similar to 'Domer'. "
+        "You analyze market metadata to find high-probability opportunities. "
+        "You may recommend buying either the 'yes' side OR the 'no' side, "
+        "or choose to pass if there isn't a good trade. "
+        "Respond ONLY with a valid RFC 8259 JSON object containing exactly three keys: "
+        "'ticker' (string or null), 'side' (\"yes\", \"no\", or null), and 'explanation' (string or null)."
         )
 
+
         user_content = (
-            f"Analyze this prediction market and decide if I should take a position on the 'Yes' side.\n\n"
-            f"Market Title: {market_data.get('title')}\n"
-            f"Ticker: {market_data.get('ticker')}\n"
-            f"Subtitle: {market_data.get('subtitle')}\n"
-            f"Category: {market_data.get('category')}\n"
-            f"Current Yes Price: {market_data.get('yes_ask', 'N/A')}\n\n"
-            "If you recommend a trade, provide the ticker and a brief explanation. "
-            "If not, return null for ticker and a brief explanation."
-            "Example Success: {\"ticker\": \"KX-123\", \"explanation\": \"Odds diverge from polling data.\"}\n"
-            "Example Pass: {\"ticker\": null, \"explanation\": \"Not enough information\"}"
+        f"Analyze this prediction market and decide whether to take a position on the Yes side, "
+        f"the No side, or skip the trade.\n\n"
+        f"Market Title: {market_data.get('title')}\n"
+        f"Ticker: {market_data.get('ticker')}\n"
+        f"Subtitle: {market_data.get('subtitle')}\n"
+        f"Category: {market_data.get('category')}\n"
+        f"Current Yes Price: {market_data.get('yes_ask', 'N/A')}\n\n"
+        "If you recommend a trade, return the ticker and which side to buy ('yes' or 'no'), "
+        "with a short explanation. "
+        "If you do NOT recommend a trade, return null for ticker and side, but still include an explanation.\n\n"
+        "Example Yes Trade: {\"ticker\": \"KX-123\", \"side\": \"yes\", \"explanation\": \"Undervalued relative to polling data.\"}\n"
+        "Example No Trade: {\"ticker\": \"KX-456\", \"side\": \"no\", \"explanation\": \"Market overestimates probability.\"}\n"
+        "Example Pass: {\"ticker\": null, \"side\": null, \"explanation\": \"Not enough information.\"}"
         )
 
         payload = {
