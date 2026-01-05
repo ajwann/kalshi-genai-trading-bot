@@ -3,6 +3,7 @@ name: Python Tests
 on:
   pull_request:
     branches: [ "main", "master" ] # Adjust if your default branch has a different name
+  workflow_dispatch: # This allows manual triggering
 
 jobs:
   test:
