@@ -32,7 +32,7 @@ def test_get_active_markets(mock_kalshi):
 def test_create_market_order(mock_kalshi):
     with patch.object(mock_kalshi, '_request') as mock_req:
         mock_req.return_value = {"order_id": "123"}
-        resp = mock_kalshi.create_market_order("TICKER", "yes", 1)
+        resp = mock_kalshi.create_market_order(ticker="TICKER", side="yes", count=1, price=12)
         
         assert resp == {"order_id": "123"}
         
@@ -46,6 +46,8 @@ def test_create_market_order(mock_kalshi):
                 "type": "market", 
                 "side": "yes", 
                 "count": 1, 
+                "yes_price": 12, 
+                "cancel_order_on_pause": True,
                 "client_order_id": ANY
             }
         )
