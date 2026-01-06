@@ -1,0 +1,37 @@
+name: Python Tests
+
+on:
+  pull_request:
+    branches: [ "main", "master" ] # Adjust if your default branch has a different name
+  workflow_dispatch: # This allows manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # This ensures all 'run' commands happen inside your subdirectory
+    defaults:
+      run:
+        working-directory: ./new_position_bot
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          # Optional: caching dependencies speeds up your builds
+          cache: 'pip' 
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # If you have a requirements file in the subdirectory:
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Ensure pytest is installed even if not in requirements.txt
+          pip install pytest
+
+      - name: Run tests with pytest
+        run: python -m pytest

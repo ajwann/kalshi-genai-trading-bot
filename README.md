@@ -1,3 +1,5 @@
+[![Python Quality & Tests](https://github.com/ajwann/kalshi-genai-trading-bot/actions/workflows/pytest.yml/badge.svg)](https://github.com/ajwann/kalshi-genai-trading-bot/actions)
+
 # Kalshi GenAI Trading Bot
 A vibe coded Generative AI prediction market trading bot. The goal of this experiment is to create a role prompt for an LLM (in this case Grok) to make it into a professional prediction market trader. Currently, v1 of this project only has a single bot, which takes new positions. Over time, I plan to add another both for re-evaluating and selling existing positions.
 
