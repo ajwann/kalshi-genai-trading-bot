@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from new_position_bot.grok_client import GrokClient
+from grok_client import GrokClient
 
 def test_analyze_market_success():
     client = GrokClient("api_key")

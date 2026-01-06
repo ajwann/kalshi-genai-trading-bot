@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch, ANY
-from new_position_bot.kalshi_client import KalshiClient
+from kalshi_client import KalshiClient
 
 
 @pytest.fixture
