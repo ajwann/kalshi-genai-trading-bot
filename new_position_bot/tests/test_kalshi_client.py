@@ -37,7 +37,7 @@ def test_create_market_order(mock_kalshi):
             ticker="TICKER",
             side="yes",
             count=1,
-            yes_price=12
+            price=12
         )
 
         assert resp == {"order_id": "123"}
