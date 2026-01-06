@@ -101,6 +101,7 @@ class KalshiClient:
         ticker: str,
         side: str = "yes",
         count: int = 1,
+        price: int = None,
         yes_price: int = None,
         no_price: int = None
     ):
@@ -114,6 +115,14 @@ class KalshiClient:
             "client_order_id": str(int(time.time() * 1000000))
         }
 
+        # If generic price is given, map it based on side
+        if price is not None:
+            if side == "yes":
+                payload["yes_price"] = price
+            elif side == "no":
+                payload["no_price"] = price
+
+        # Explicit prices override generic price
         if yes_price is not None:
             payload["yes_price"] = yes_price
 
@@ -122,4 +131,3 @@ class KalshiClient:
 
         logger.info(f"Placing order: {payload}")
         return self._request("POST", "/portfolio/orders", data=payload)
-
