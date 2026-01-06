@@ -11,7 +11,7 @@ def mock_kalshi():
         "-----END RSA PRIVATE KEY-----"
     )
 
-    with patch("new_position_bot.kalshi_client.load_pem_private_key") as mock_load:
+    with patch("kalshi_client.load_pem_private_key") as mock_load:
         mock_load.return_value = MagicMock()
         client = KalshiClient("https://test.api", "key_id", dummy_key)
         client.private_key.sign.return_value = b"signature"
