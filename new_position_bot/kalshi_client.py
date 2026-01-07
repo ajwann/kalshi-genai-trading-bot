@@ -96,6 +96,75 @@ class KalshiClient:
         data = self._request("GET", "/portfolio/positions")
         return data.get("market_positions", [])
 
+    def get_orders(
+        self, 
+        start_time: Optional[datetime] = None,
+        status: Optional[str] = None,
+        bot_identifier: Optional[str] = "NEW_POSITION_BOT"
+    ) -> List[Dict]:
+        """
+        Fetches orders from the portfolio.
+        
+        Args:
+            start_time: Filter orders created after this time
+            status: Filter by status ('resting', 'executed', 'canceled')
+            bot_identifier: Only return orders with this prefix in client_order_id.
+                           If None, returns all orders.
+        
+        Returns:
+            List of order dictionaries (only bot orders if bot_identifier provided)
+        """
+        params = {"limit": 200}
+        
+        if status:
+            params["status"] = status
+        
+        if start_time:
+            params["min_ts"] = int(start_time.timestamp() * 1000)
+        
+        data = self._request("GET", "/portfolio/orders", params=params)
+        orders = data.get("orders", [])
+        
+        # Handle pagination
+        all_orders = orders
+        cursor = data.get("cursor")
+        
+        while cursor and len(orders) == 200:
+            params["cursor"] = cursor
+            data = self._request("GET", "/portfolio/orders", params=params)
+            more_orders = data.get("orders", [])
+            all_orders.extend(more_orders)
+            cursor = data.get("cursor")
+            if not more_orders:
+                break
+        
+        # Filter by bot identifier if provided
+        if bot_identifier:
+            bot_orders = []
+            for order in all_orders:
+                client_order_id = order.get("client_order_id", "")
+                if client_order_id.startswith(bot_identifier):
+                    bot_orders.append(order)
+            all_orders = bot_orders
+        
+        # Client-side time filtering as backup
+        if start_time:
+            filtered_orders = []
+            for order in all_orders:
+                order_time_str = order.get("created_time")
+                if order_time_str:
+                    try:
+                        order_time = datetime.fromisoformat(order_time_str.replace("Z", "+00:00"))
+                        order_time = order_time.replace(tzinfo=None)
+                        if order_time >= start_time:
+                            filtered_orders.append(order)
+                    except Exception as e:
+                        logger.warning(f"Failed to parse order time {order_time_str}: {e}")
+                        continue
+            return filtered_orders
+        
+        return all_orders
+
     def create_market_order(
         self,
         ticker: str,
@@ -103,7 +172,8 @@ class KalshiClient:
         count: int = 1,
         price: int = None,
         yes_price: int = None,
-        no_price: int = None
+        no_price: int = None,
+        bot_identifier: str = "NEW_POSITION_BOT"
     ):
         payload = {
             "ticker": ticker,
@@ -112,7 +182,7 @@ class KalshiClient:
             "side": side,
             "count": count,
             "cancel_order_on_pause": True,
-            "client_order_id": str(int(time.time() * 1000000))
+            "client_order_id": f"{bot_identifier}-{int(time.time() * 1000000)}"
         }
 
         # If generic price is given, map it based on side

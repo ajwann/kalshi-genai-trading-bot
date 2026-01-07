@@ -91,3 +91,80 @@ def test_create_market_order_accepts_yes_and_no_price(mock_kalshi):
                 "client_order_id": ANY,
             },
         )
+
+
+def test_create_market_order_includes_bot_identifier(mock_kalshi):
+    with patch.object(mock_kalshi, "_request") as mock_req:
+        mock_req.return_value = {"order_id": "789"}
+
+        resp = mock_kalshi.create_market_order(
+            ticker="TICKER",
+            side="yes",
+            count=1,
+            price=75,
+            bot_identifier="TEST_BOT"
+        )
+
+        assert resp == {"order_id": "789"}
+        
+        # Check that client_order_id starts with bot_identifier
+        call_args = mock_req.call_args
+        client_order_id = call_args[1]["data"]["client_order_id"]
+        assert client_order_id.startswith("TEST_BOT-")
+
+
+def test_get_orders_filters_by_bot_identifier(mock_kalshi):
+    with patch.object(mock_kalshi, "_request") as mock_req:
+        mock_req.return_value = {
+            "orders": [
+                {
+                    "order_id": "1",
+                    "client_order_id": "NEW_POSITION_BOT-123456",
+                    "ticker": "TICKER1",
+                    "status": "executed"
+                },
+                {
+                    "order_id": "2",
+                    "client_order_id": "manual-789012",
+                    "ticker": "TICKER2",
+                    "status": "executed"
+                },
+                {
+                    "order_id": "3",
+                    "client_order_id": "NEW_POSITION_BOT-345678",
+                    "ticker": "TICKER3",
+                    "status": "resting"
+                },
+            ],
+            "cursor": None
+        }
+
+        orders = mock_kalshi.get_orders(bot_identifier="NEW_POSITION_BOT")
+
+        assert len(orders) == 2
+        assert all(order["client_order_id"].startswith("NEW_POSITION_BOT") for order in orders)
+        assert orders[0]["order_id"] == "1"
+        assert orders[1]["order_id"] == "3"
+
+
+def test_get_orders_returns_all_orders_when_no_identifier(mock_kalshi):
+    with patch.object(mock_kalshi, "_request") as mock_req:
+        mock_req.return_value = {
+            "orders": [
+                {
+                    "order_id": "1",
+                    "client_order_id": "BOT-123",
+                    "status": "executed"
+                },
+                {
+                    "order_id": "2",
+                    "client_order_id": "manual-456",
+                    "status": "executed"
+                },
+            ],
+            "cursor": None
+        }
+
+        orders = mock_kalshi.get_orders(bot_identifier=None)
+
+        assert len(orders) == 2
