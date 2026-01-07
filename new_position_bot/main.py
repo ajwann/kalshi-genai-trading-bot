@@ -54,15 +54,22 @@ def run_bot_logic():
             
             rec_ticker = recommendation.get("ticker")
             explanation = recommendation.get("explanation")
+            side = recommendation.get("side", "yes")   # <-- NEW: pass side from Grok
             
             if rec_ticker and rec_ticker == ticker:
-                logger.info(f"Grok recommends BUY on {ticker}. Reason: {explanation}")
+                logger.info(f"Grok recommends BUY {side.upper()} on {ticker}. Reason: {explanation}")
                 
-                # 5. Execute Trade
                 try:
-                    # Defaulting to Buying 1 Yes Contract
-                    logger.info(f"About to buy 1 yes contract for {ticker} at price {market.get('yes_ask')}")
-                    order_response = kalshi.create_market_order(ticker, side="yes", count=1, price=market.get('yes_ask'))
+                    logger.info(f"About to buy 1 {side} contract for {ticker} at price {market.get(f'{side}_ask')}")
+                    
+                    # 🔥 CHANGED (line 65): side is no longer hard-coded
+                    order_response = kalshi.create_market_order(
+                        ticker,
+                        side=side,
+                        count=1,
+                        price=market.get(f"{side}_ask")
+                    )
+                    
                     logger.info(f"Order placed successfully: {order_response}")
                 except Exception as trade_err:
                     logger.error(f"Failed to place order for {ticker}: {trade_err}")

@@ -96,17 +96,38 @@ class KalshiClient:
         data = self._request("GET", "/portfolio/positions")
         return data.get("market_positions", [])
 
-    def create_market_order(self, ticker: str, side: str = "yes", count: int = 1, price: int = None):
-        """Places a market order."""
+    def create_market_order(
+        self,
+        ticker: str,
+        side: str = "yes",
+        count: int = 1,
+        price: int = None,
+        yes_price: int = None,
+        no_price: int = None
+    ):
         payload = {
             "ticker": ticker,
             "action": "buy",
             "type": "market",
             "side": side,
             "count": count,
-            "yes_price": price, 
             "cancel_order_on_pause": True,
-            "client_order_id": str(int(time.time() * 1000000)) # Unique ID
+            "client_order_id": str(int(time.time() * 1000000))
         }
+
+        # If generic price is given, map it based on side
+        if price is not None:
+            if side == "yes":
+                payload["yes_price"] = price
+            elif side == "no":
+                payload["no_price"] = price
+
+        # Explicit prices override generic price
+        if yes_price is not None:
+            payload["yes_price"] = yes_price
+
+        if no_price is not None:
+            payload["no_price"] = no_price
+
         logger.info(f"Placing order: {payload}")
         return self._request("POST", "/portfolio/orders", data=payload)
