@@ -1,4 +1,4 @@
-name: Python Tests
+name: Python Quality & Tests
 
 on:
   pull_request:
@@ -32,6 +32,9 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           # Ensure pytest is installed even if not in requirements.txt
           pip install pytest
+
+      - name: Run Ruff
+        run: python -m ruff check .
 
       - name: Run tests with pytest
         run: python -m pytest

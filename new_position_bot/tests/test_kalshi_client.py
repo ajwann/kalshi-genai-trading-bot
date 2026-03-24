@@ -1,5 +1,7 @@
+from unittest.mock import ANY, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, patch, ANY
+
 from kalshi_client import KalshiClient
 
 
@@ -102,11 +104,11 @@ def test_create_market_order_includes_bot_identifier(mock_kalshi):
             side="yes",
             count=1,
             price=75,
-            bot_identifier="TEST_BOT"
+            bot_identifier="TEST_BOT",
         )
 
         assert resp == {"order_id": "789"}
-        
+
         # Check that client_order_id starts with bot_identifier
         call_args = mock_req.call_args
         client_order_id = call_args[1]["data"]["client_order_id"]
@@ -121,22 +123,22 @@ def test_get_orders_filters_by_bot_identifier(mock_kalshi):
                     "order_id": "1",
                     "client_order_id": "NEW_POSITION_BOT-123456",
                     "ticker": "TICKER1",
-                    "status": "executed"
+                    "status": "executed",
                 },
                 {
                     "order_id": "2",
                     "client_order_id": "manual-789012",
                     "ticker": "TICKER2",
-                    "status": "executed"
+                    "status": "executed",
                 },
                 {
                     "order_id": "3",
                     "client_order_id": "NEW_POSITION_BOT-345678",
                     "ticker": "TICKER3",
-                    "status": "resting"
+                    "status": "resting",
                 },
             ],
-            "cursor": None
+            "cursor": None,
         }
 
         orders = mock_kalshi.get_orders(bot_identifier="NEW_POSITION_BOT")
@@ -154,15 +156,15 @@ def test_get_orders_returns_all_orders_when_no_identifier(mock_kalshi):
                 {
                     "order_id": "1",
                     "client_order_id": "BOT-123",
-                    "status": "executed"
+                    "status": "executed",
                 },
                 {
                     "order_id": "2",
                     "client_order_id": "manual-456",
-                    "status": "executed"
+                    "status": "executed",
                 },
             ],
-            "cursor": None
+            "cursor": None,
         }
 
         orders = mock_kalshi.get_orders(bot_identifier=None)
