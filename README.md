@@ -35,8 +35,8 @@ BY ACCESSING, DOWNLOADING, INSTALLING, OR USING THIS SOFTWARE (THE "SOFTWARE"), 
 ## Contributing
 1. Fork this repo.
 2. Clone your fork to your local machine.
-3. Cut a branch of main named `feature/cool-feature-name` or `bugfix/bug-to-be-fixed`.
-4. Make your changes and run the tests with `python -m pytest` from the `new_position_bot/` directory.
-5. Assuming the tests pass, commit your local changes.
-5. Push your changes up to your forked repo.
-6. Open a PR from your forked repo's feature or bugfix branch to this repo's main branch.
+3. Cut a branch off main named `feature/cool-feature-name` or `bugfix/bug-to-be-fixed`.
+4. Make your changes and run `python -m ruff check .` and `python -m pytest` from the `new_position_bot/` directory.
+5. Assuming the checks pass, commit your local changes.
+6. Push your changes up to your forked repo.
+7. Open a PR from your forked repo's feature or bugfix branch to this repo's main branch.

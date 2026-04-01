@@ -1,50 +1,51 @@
-import time
 import base64
-import json
+import logging
+import time
+from datetime import UTC, datetime, timedelta
+from typing import Dict, List, Optional
+
 import requests
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
-import logging
 
 logger = logging.getLogger(__name__)
 
+
 class KalshiClient:
     def __init__(self, base_url: str, api_key: str, private_key_pem: str):
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.private_key = load_pem_private_key(private_key_pem.encode(), password=None)
 
     def _sign_request(self, method: str, path: str, timestamp: str) -> str:
-        # Signature payload: timestamp + method + path (no query params for signature usually, but Kalshi specific)
+        # Signature payload: timestamp + method + path without query parameters.
         # Kalshi Docs: timestamp + method + path_without_query
         # Path should include the leading slash, e.g. /trade-api/v2/markets
-        payload = f"{timestamp}{method}{path}".encode('utf-8')
-        
+        payload = f"{timestamp}{method}{path}".encode("utf-8")
+
         signature = self.private_key.sign(
             payload,
             padding.PSS(
                 mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
+                salt_length=padding.PSS.MAX_LENGTH,
             ),
-            hashes.SHA256()
+            hashes.SHA256(),
         )
-        return base64.b64encode(signature).decode('utf-8')
+        return base64.b64encode(signature).decode("utf-8")
 
     def _request(self, method: str, endpoint: str, params: Dict = None, data: Dict = None) -> Dict:
         path = f"/trade-api/v2{endpoint}"
         url = f"{self.base_url}{path}"
         timestamp = str(int(time.time() * 1000))
-        
+
         signature = self._sign_request(method, path, timestamp)
-        
+
         headers = {
             "Content-Type": "application/json",
             "KALSHI-ACCESS-KEY": self.api_key,
             "KALSHI-ACCESS-SIGNATURE": signature,
-            "KALSHI-ACCESS-TIMESTAMP": timestamp
+            "KALSHI-ACCESS-TIMESTAMP": timestamp,
         }
 
         try:
@@ -59,36 +60,40 @@ class KalshiClient:
         """
         Fetches markets created in the last N hours that are currently active.
         """
-        # Kalshi doesn't strictly support filtering by 'created_time' in the GET params 
+        # Kalshi doesn't strictly support filtering by 'created_time' in the GET params
         # for all endpoints, so we fetch open markets and filter client-side.
         # We use limit=500 to get a good chunk of recent activity.
         params = {"status": "open", "limit": 500}
         data = self._request("GET", "/markets", params=params)
-        
+
         markets = data.get("markets", [])
         filtered_markets = []
-        
-        cutoff_time = datetime.utcnow() - timedelta(hours=created_after_hours)
-        
-        for m in markets:
+
+        cutoff_time = datetime.now(UTC) - timedelta(hours=created_after_hours)
+
+        for market in markets:
             # created_time format example: "2023-11-07T05:31:56Z"
-            created_str = m.get("created_time")
+            created_str = market.get("created_time")
             if created_str:
                 # Handle potential trailing Z or fractional seconds
                 try:
-                    created_dt = datetime.strptime(created_str.replace("Z", ""), "%Y-%m-%dT%H:%M:%S")
+                    created_dt = datetime.strptime(
+                        created_str.replace("Z", ""),
+                        "%Y-%m-%dT%H:%M:%S",
+                    )
+                    created_dt = created_dt.replace(tzinfo=UTC)
                     if created_dt >= cutoff_time:
-                        filtered_markets.append(m)
+                        filtered_markets.append(market)
                 except ValueError:
                     # Attempt ISO format with microseconds if basic parse fails
                     try:
-                         created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
-                         if created_dt.replace(tzinfo=None) >= cutoff_time:
-                             filtered_markets.append(m)
+                        created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                        if created_dt >= cutoff_time:
+                            filtered_markets.append(market)
                     except Exception as e:
                         logger.warning(f"Failed to parse date {created_str}: {e}")
                         continue
-                        
+
         return filtered_markets
 
     def get_positions(self) -> List[Dict]:
@@ -97,10 +102,10 @@ class KalshiClient:
         return data.get("market_positions", [])
 
     def get_orders(
-        self, 
+        self,
         start_time: Optional[datetime] = None,
         status: Optional[str] = None,
-        bot_identifier: Optional[str] = "NEW_POSITION_BOT"
+        bot_identifier: Optional[str] = "NEW_POSITION_BOT",
     ) -> List[Dict]:
         """
         Fetches orders from the portfolio.
@@ -115,20 +120,20 @@ class KalshiClient:
             List of order dictionaries (only bot orders if bot_identifier provided)
         """
         params = {"limit": 200}
-        
+
         if status:
             params["status"] = status
-        
+
         if start_time:
             params["min_ts"] = int(start_time.timestamp() * 1000)
-        
+
         data = self._request("GET", "/portfolio/orders", params=params)
         orders = data.get("orders", [])
-        
+
         # Handle pagination
         all_orders = orders
         cursor = data.get("cursor")
-        
+
         while cursor and len(orders) == 200:
             params["cursor"] = cursor
             data = self._request("GET", "/portfolio/orders", params=params)
@@ -155,7 +160,6 @@ class KalshiClient:
                 if order_time_str:
                     try:
                         order_time = datetime.fromisoformat(order_time_str.replace("Z", "+00:00"))
-                        order_time = order_time.replace(tzinfo=None)
                         if order_time >= start_time:
                             filtered_orders.append(order)
                     except Exception as e:
@@ -173,7 +177,7 @@ class KalshiClient:
         price: int = None,
         yes_price: int = None,
         no_price: int = None,
-        bot_identifier: str = "NEW_POSITION_BOT"
+        bot_identifier: str = "NEW_POSITION_BOT",
     ):
         payload = {
             "ticker": ticker,
@@ -182,7 +186,7 @@ class KalshiClient:
             "side": side,
             "count": count,
             "cancel_order_on_pause": True,
-            "client_order_id": f"{bot_identifier}-{int(time.time() * 1000000)}"
+            "client_order_id": f"{bot_identifier}-{int(time.time() * 1000000)}",
         }
 
         # If generic price is given, map it based on side

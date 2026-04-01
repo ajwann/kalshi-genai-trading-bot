@@ -1,0 +1,7 @@
+[tool.ruff]
+line-length = 100
+src = ["new_position_bot"]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

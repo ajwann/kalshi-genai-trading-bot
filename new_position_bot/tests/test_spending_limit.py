@@ -1,5 +1,5 @@
-import pytest
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
 from spending_limit import SpendingLimitTracker
 
 
@@ -28,7 +28,7 @@ def test_calculate_order_cost():
 def test_calculate_spending_from_orders_executed():
     """Test spending calculation from executed orders."""
     tracker = SpendingLimitTracker()
-    
+
     orders = [
         {
             "order_id": "1",
@@ -36,7 +36,7 @@ def test_calculate_spending_from_orders_executed():
             "side": "yes",
             "taker_fill_cost": 75,
             "maker_fill_cost": 0,
-            "remaining_count": 0
+            "remaining_count": 0,
         },
         {
             "order_id": "2",
@@ -44,7 +44,7 @@ def test_calculate_spending_from_orders_executed():
             "side": "no",
             "taker_fill_cost": 0,
             "maker_fill_cost": 100,
-            "remaining_count": 0
+            "remaining_count": 0,
         },
         {
             "order_id": "3",
@@ -52,10 +52,10 @@ def test_calculate_spending_from_orders_executed():
             "side": "yes",
             "taker_fill_cost": 50,
             "maker_fill_cost": 30,
-            "remaining_count": 0
+            "remaining_count": 0,
         },
     ]
-    
+
     total = tracker.calculate_spending_from_orders(orders)
     assert total == 75 + 100 + 80  # 255 cents
 
@@ -63,7 +63,7 @@ def test_calculate_spending_from_orders_executed():
 def test_calculate_spending_from_orders_resting():
     """Test spending calculation includes committed capital from resting orders."""
     tracker = SpendingLimitTracker()
-    
+
     orders = [
         {
             "order_id": "1",
@@ -72,10 +72,10 @@ def test_calculate_spending_from_orders_resting():
             "taker_fill_cost": 25,  # Partially filled
             "maker_fill_cost": 0,
             "remaining_count": 3,  # 3 contracts still pending
-            "yes_price": 75
+            "yes_price": 75,
         },
     ]
-    
+
     total = tracker.calculate_spending_from_orders(orders)
     # 25 (filled) + (3 * 75) (committed) = 25 + 225 = 250 cents
     assert total == 250
@@ -84,7 +84,7 @@ def test_calculate_spending_from_orders_resting():
 def test_calculate_spending_from_orders_canceled():
     """Test that canceled orders only count what was filled."""
     tracker = SpendingLimitTracker()
-    
+
     orders = [
         {
             "order_id": "1",
@@ -92,10 +92,10 @@ def test_calculate_spending_from_orders_canceled():
             "side": "yes",
             "taker_fill_cost": 50,  # 2 contracts filled before cancel
             "maker_fill_cost": 0,
-            "remaining_count": 3  # 3 contracts canceled, don't count
+            "remaining_count": 3,  # 3 contracts canceled, don't count
         },
     ]
-    
+
     total = tracker.calculate_spending_from_orders(orders)
     assert total == 50  # Only filled portion
 
@@ -103,12 +103,12 @@ def test_calculate_spending_from_orders_canceled():
 def test_can_place_order_within_limit():
     """Test that orders within limit are allowed."""
     tracker = SpendingLimitTracker(max_spending_cents=10000)  # $100 limit
-    
+
     can_place, reason = tracker.can_place_order(
         order_cost_cents=5000,  # $50 order
-        current_spending_cents=3000  # $30 already spent
+        current_spending_cents=3000,  # $30 already spent
     )
-    
+
     assert can_place is True
     assert "Spending OK" in reason
 
@@ -116,12 +116,12 @@ def test_can_place_order_within_limit():
 def test_can_place_order_exceeds_limit():
     """Test that orders exceeding limit are blocked."""
     tracker = SpendingLimitTracker(max_spending_cents=10000)  # $100 limit
-    
+
     can_place, reason = tracker.can_place_order(
         order_cost_cents=8000,  # $80 order
-        current_spending_cents=3000  # $30 already spent = $110 total
+        current_spending_cents=3000,  # $30 already spent = $110 total
     )
-    
+
     assert can_place is False
     assert "exceed spending limit" in reason.lower()
 
@@ -129,23 +129,23 @@ def test_can_place_order_exceeds_limit():
 def test_can_place_order_at_limit():
     """Test order at exact limit boundary."""
     tracker = SpendingLimitTracker(max_spending_cents=10000)  # $100 limit
-    
+
     can_place, reason = tracker.can_place_order(
         order_cost_cents=7000,  # $70 order
-        current_spending_cents=3000  # $30 already spent = $100 total
+        current_spending_cents=3000,  # $30 already spent = $100 total
     )
-    
+
     assert can_place is True  # At limit is OK
 
 
 def test_calculate_current_spending_filters_by_time():
     """Test that calculate_current_spending filters orders by time."""
     tracker = SpendingLimitTracker(limit_period_hours=24)
-    
-    now = datetime.utcnow()
-    old_time = (now - timedelta(hours=25)).isoformat() + "Z"  # 25 hours ago
-    recent_time = (now - timedelta(hours=12)).isoformat() + "Z"  # 12 hours ago
-    
+
+    now = datetime.now(UTC)
+    old_time = (now - timedelta(hours=25)).isoformat().replace("+00:00", "Z")  # 25 hours ago
+    recent_time = (now - timedelta(hours=12)).isoformat().replace("+00:00", "Z")  # 12 hours ago
+
     orders = [
         {
             "order_id": "1",
@@ -153,7 +153,7 @@ def test_calculate_current_spending_filters_by_time():
             "created_time": old_time,  # Outside period
             "taker_fill_cost": 100,
             "maker_fill_cost": 0,
-            "remaining_count": 0
+            "remaining_count": 0,
         },
         {
             "order_id": "2",
@@ -161,10 +161,10 @@ def test_calculate_current_spending_filters_by_time():
             "created_time": recent_time,  # Within period
             "taker_fill_cost": 200,
             "maker_fill_cost": 0,
-            "remaining_count": 0
+            "remaining_count": 0,
         },
     ]
-    
+
     spending = tracker.calculate_current_spending(orders)
     assert spending == 200  # Only the recent order counts
 
@@ -173,10 +173,10 @@ def test_get_period_start_time():
     """Test period start time calculation."""
     tracker = SpendingLimitTracker(limit_period_hours=24)
     period_start = tracker.get_period_start_time()
-    
-    now = datetime.utcnow()
+
+    now = datetime.now(UTC)
     expected_start = now - timedelta(hours=24)
-    
+
     # Allow 1 second difference for execution time
     assert abs((period_start - expected_start).total_seconds()) < 1
 
@@ -184,14 +184,14 @@ def test_get_period_start_time():
 def test_calculate_spending_mixed_order_statuses():
     """Test spending calculation with mixed order statuses."""
     tracker = SpendingLimitTracker()
-    
+
     orders = [
         {
             "order_id": "1",
             "status": "executed",
             "taker_fill_cost": 100,
             "maker_fill_cost": 0,
-            "remaining_count": 0
+            "remaining_count": 0,
         },
         {
             "order_id": "2",
@@ -200,18 +200,17 @@ def test_calculate_spending_mixed_order_statuses():
             "taker_fill_cost": 50,
             "maker_fill_cost": 0,
             "remaining_count": 2,
-            "yes_price": 75
+            "yes_price": 75,
         },
         {
             "order_id": "3",
             "status": "canceled",
             "taker_fill_cost": 25,
             "maker_fill_cost": 0,
-            "remaining_count": 5
+            "remaining_count": 5,
         },
     ]
-    
+
     total = tracker.calculate_spending_from_orders(orders)
     # 100 (executed) + 50 (filled) + 150 (committed) + 25 (canceled but filled) = 325 cents
     assert total == 325
-
