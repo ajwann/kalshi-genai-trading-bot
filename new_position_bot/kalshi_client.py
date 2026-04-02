@@ -169,6 +169,16 @@ class KalshiClient:
         
         return all_orders
 
+    def get_market(self, ticker: str) -> Dict:
+        """Fetches detailed data for a single market, including settlement rules."""
+        data = self._request("GET", f"/markets/{ticker}")
+        return data.get("market", {})
+
+    def get_series(self, series_ticker: str) -> Dict:
+        """Fetches series metadata including settlement sources and contract URLs."""
+        data = self._request("GET", f"/series/{series_ticker}")
+        return data.get("series", {})
+
     def create_market_order(
         self,
         ticker: str,
