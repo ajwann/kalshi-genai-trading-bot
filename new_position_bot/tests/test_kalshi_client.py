@@ -170,3 +170,51 @@ def test_get_orders_returns_all_orders_when_no_identifier(mock_kalshi):
         orders = mock_kalshi.get_orders(bot_identifier=None)
 
         assert len(orders) == 2
+
+
+def test_get_market_returns_market_detail(mock_kalshi):
+    with patch.object(mock_kalshi, "_request") as mock_req:
+        mock_req.return_value = {
+            "market": {
+                "ticker": "CPI-25APR-T3.5",
+                "event_ticker": "CPI-25APR",
+                "yes_sub_title": "Above 3.5%",
+                "no_sub_title": "3.5% or below",
+                "rules_primary": "Resolves Yes if CPI-U > 3.5%.",
+                "rules_secondary": "Based on seasonally adjusted data.",
+            }
+        }
+
+        market = mock_kalshi.get_market("CPI-25APR-T3.5")
+
+        mock_req.assert_called_once_with("GET", "/markets/CPI-25APR-T3.5")
+        assert market["ticker"] == "CPI-25APR-T3.5"
+        assert market["rules_primary"] == "Resolves Yes if CPI-U > 3.5%."
+        assert market["yes_sub_title"] == "Above 3.5%"
+
+
+def test_get_series_returns_settlement_sources(mock_kalshi):
+    with patch.object(mock_kalshi, "_request") as mock_req:
+        mock_req.return_value = {
+            "series": {
+                "ticker": "CPI",
+                "frequency": "monthly",
+                "title": "Consumer Price Index",
+                "settlement_sources": [
+                    {
+                        "name": "Bureau of Labor Statistics",
+                        "url": "https://www.bls.gov/cpi/",
+                    }
+                ],
+                "contract_url": "https://kalshi.com/contracts/cpi",
+                "contract_terms_url": "https://kalshi.com/terms/cpi",
+            }
+        }
+
+        series = mock_kalshi.get_series("CPI")
+
+        mock_req.assert_called_once_with("GET", "/series/CPI")
+        assert series["ticker"] == "CPI"
+        assert series["frequency"] == "monthly"
+        assert len(series["settlement_sources"]) == 1
+        assert series["settlement_sources"][0]["name"] == "Bureau of Labor Statistics"
