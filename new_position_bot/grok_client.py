@@ -12,10 +12,16 @@ class GrokClient:
         self.model = model
         self.base_url = "https://api.x.ai/v1/chat/completions"
 
-    def analyze_market(self, market_data: dict) -> dict:
+    def analyze_market(self, market_data: dict, settlement_rules: str = "") -> dict:
         """
         Sends market data to Grok and asks for a trading decision.
         Returns the JSON parsed response.
+
+        Args:
+            market_data: Market dict from Kalshi list endpoint.
+            settlement_rules: Pre-formatted settlement rules text to inject
+                              into the prompt so Grok understands how the
+                              market resolves.
         """
 
         system_prompt = (
@@ -23,6 +29,8 @@ class GrokClient:
             "You analyze market metadata to find high-probability opportunities. "
             "You may recommend buying either the 'yes' side OR the 'no' side, "
             "or choose to pass if there isn't a good trade. "
+            "When settlement rules are provided, treat them as the authoritative "
+            "definition of how the market resolves. "
             "Respond ONLY with a valid RFC 8259 JSON object containing exactly three keys: "
             "'ticker' (string or null), 'side' (\"yes\", \"no\", or null), and "
             "'explanation' (string or null)."
@@ -36,6 +44,12 @@ class GrokClient:
             f"Subtitle: {market_data.get('subtitle')}\n"
             f"Category: {market_data.get('category')}\n"
             f"Current Yes Price: {market_data.get('yes_ask', 'N/A')}\n\n"
+        )
+
+        if settlement_rules:
+            user_content += f"{settlement_rules}\n\n"
+
+        user_content += (
             "If you recommend a trade, return the ticker and which side to buy "
             "('yes' or 'no'), with a short explanation. "
             "If you do NOT recommend a trade, return null for ticker and side, "

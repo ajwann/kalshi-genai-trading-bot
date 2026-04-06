@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 
 import functions_framework
 from dotenv import load_dotenv
@@ -11,6 +12,102 @@ from utils import get_env_var, get_private_key
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _derive_series_ticker(event_ticker: str) -> str:
+    """Best-effort extraction of series ticker from an event ticker.
+
+    Kalshi convention is typically ``SERIES-DATE…`` so we strip the
+    trailing date segment(s).  Returns the event ticker unchanged if
+    we can't identify a date-like suffix.
+    """
+    parts = event_ticker.split("-")
+    if len(parts) <= 1:
+        return event_ticker
+
+    # Walk from the right and drop parts that look like dates (digits,
+    # short alphanumeric date codes like "26APR02", qualifier prefixes
+    # like "T95000").
+    prefix_parts = []
+    for part in parts:
+        has_digit = any(c.isdigit() for c in part)
+        if has_digit and prefix_parts:
+            break
+        prefix_parts.append(part)
+
+    return "-".join(prefix_parts) if prefix_parts else event_ticker
+
+
+def build_settlement_rules(
+    kalshi: KalshiClient,
+    ticker: str,
+    series_cache: Dict[str, Dict],
+) -> str:
+    """Fetch market detail + series and return a formatted rules block.
+
+    Series lookups are cached in *series_cache* (keyed by series ticker)
+    to avoid redundant API calls within a single bot run.
+    """
+    lines = ["--- Settlement Rules (authoritative for resolution) ---"]
+
+    try:
+        detail = kalshi.get_market(ticker)
+    except Exception as exc:
+        logger.warning("Could not fetch market detail for %s: %s", ticker, exc)
+        return ""
+
+    yes_sub = detail.get("yes_sub_title", "")
+    no_sub = detail.get("no_sub_title", "")
+    rules_primary = detail.get("rules_primary", "")
+    rules_secondary = detail.get("rules_secondary", "")
+
+    if yes_sub:
+        lines.append(f"Yes outcome: {yes_sub}")
+    if no_sub:
+        lines.append(f"No outcome: {no_sub}")
+    if rules_primary:
+        lines.append(f"Primary rules: {rules_primary}")
+    if rules_secondary:
+        lines.append(f"Secondary rules: {rules_secondary}")
+
+    # Attempt to enrich with series-level settlement sources
+    event_ticker = detail.get("event_ticker", "")
+    if event_ticker:
+        series_ticker = _derive_series_ticker(event_ticker)
+        series = series_cache.get(series_ticker)
+        if series is None:
+            try:
+                series = kalshi.get_series(series_ticker)
+                series_cache[series_ticker] = series
+            except Exception as exc:
+                logger.debug(
+                    "Series lookup failed for %s (derived from %s): %s",
+                    series_ticker,
+                    event_ticker,
+                    exc,
+                )
+                series = {}
+                series_cache[series_ticker] = series
+
+        sources = series.get("settlement_sources", [])
+        if sources:
+            source_strs = []
+            for src in sources:
+                name = src.get("name", "")
+                url = src.get("url", "")
+                source_strs.append(f"{name} ({url})" if url else name)
+            lines.append(f"Settlement sources: {'; '.join(source_strs)}")
+
+        frequency = series.get("frequency", "")
+        if frequency:
+            lines.append(f"Settlement frequency: {frequency}")
+
+        contract_url = series.get("contract_url", "")
+        if contract_url:
+            lines.append(f"Contract filing: {contract_url}")
+
+    lines.append("--- End Settlement Rules ---")
+    return "\n".join(lines)
 
 
 def run_bot_logic():
@@ -77,6 +174,8 @@ def run_bot_logic():
             lookback_hours,
         )
 
+        series_cache: Dict[str, Dict] = {}
+
         for market in viable_new_markets:
             ticker = market["ticker"]
 
@@ -92,8 +191,12 @@ def run_bot_logic():
                 market.get("no_ask"),
             )
 
-            # 4. Consult Grok
-            recommendation = grok.analyze_market(market)
+            # 4. Fetch settlement rules and consult Grok
+            settlement_rules = build_settlement_rules(kalshi, ticker, series_cache)
+            if settlement_rules:
+                logger.info("Injected settlement rules for %s", ticker)
+
+            recommendation = grok.analyze_market(market, settlement_rules=settlement_rules)
 
             rec_ticker = recommendation.get("ticker")
             explanation = recommendation.get("explanation")
