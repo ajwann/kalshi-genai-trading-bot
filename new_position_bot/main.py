@@ -1,3 +1,4 @@
+import argparse
 import logging
 from typing import Dict
 
@@ -12,6 +13,45 @@ from utils import get_env_var, get_private_key
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+DEMO_KALSHI_BASE_URL = "https://demo-api.kalshi.co"
+PRODUCTION_KALSHI_BASE_URL = "https://api.elections.kalshi.com"
+
+
+def parse_args(args=None):
+    parser = argparse.ArgumentParser(description="Run the Kalshi new-position trading bot.")
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Run against the Kalshi production API instead of the demo API.",
+    )
+    return parser.parse_args(args)
+
+
+def get_kalshi_base_url(live: bool = False) -> str:
+    if live:
+        return PRODUCTION_KALSHI_BASE_URL
+    return get_env_var("KALSHI_BASE_URL", DEMO_KALSHI_BASE_URL)
+
+
+def get_affordable_order_count(
+    requested_count: int,
+    order_price: int | None,
+    available_funds: int,
+    spending_limit_remaining: int,
+) -> int:
+    if (
+        not isinstance(order_price, int)
+        or isinstance(order_price, bool)
+        or order_price <= 0
+    ):
+        return 0
+
+    return min(
+        requested_count,
+        available_funds // order_price,
+        spending_limit_remaining // order_price,
+    )
 
 
 def _derive_series_ticker(event_ticker: str) -> str:
@@ -110,11 +150,11 @@ def build_settlement_rules(
     return "\n".join(lines)
 
 
-def run_bot_logic():
+def run_bot_logic(live: bool = False):
     logger.info("Starting New Position Bot run...")
 
     # 1. Configuration
-    kalshi_base_url = get_env_var("KALSHI_BASE_URL", "https://demo-api.kalshi.co")
+    kalshi_base_url = get_kalshi_base_url(live)
     kalshi_api_key = get_env_var("KALSHI_API_KEY", required=True)
     lookback_hours = int(get_env_var("LOOKBACK_HOURS", "1"))
     grok_model = get_env_var("GROK_MODEL", "grok-4-1-fast-reasoning")
@@ -154,6 +194,9 @@ def run_bot_logic():
         except Exception as e:
             logger.warning(f"Failed to fetch orders for spending calculation: {e}")
             current_spending = 0  # Assume no spending if we can't fetch
+
+        available_funds = kalshi.get_balance()
+        logger.info("Available account funds: $%.2f", available_funds / 100)
 
         new_markets = kalshi.get_active_markets(created_after_hours=lookback_hours)
         viable_new_markets = [
@@ -196,13 +239,32 @@ def run_bot_logic():
             if settlement_rules:
                 logger.info("Injected settlement rules for %s", ticker)
 
-            recommendation = grok.analyze_market(market, settlement_rules=settlement_rules)
+            spending_limit_remaining = max(0, spending_limit_cents - current_spending)
+            recommendation = grok.analyze_market(
+                market,
+                settlement_rules=settlement_rules,
+                available_funds_cents=available_funds,
+                spending_limit_remaining_cents=spending_limit_remaining,
+            )
 
             rec_ticker = recommendation.get("ticker")
             explanation = recommendation.get("explanation")
             side = recommendation.get("side", "yes")
+            requested_count = recommendation.get("count")
 
             if rec_ticker and rec_ticker == ticker:
+                if (
+                    not isinstance(requested_count, int)
+                    or isinstance(requested_count, bool)
+                    or requested_count <= 0
+                ):
+                    logger.warning(
+                        "Skipping order for %s: Grok returned invalid count %r",
+                        ticker,
+                        requested_count,
+                    )
+                    continue
+
                 logger.info(
                     "Grok recommends BUY %s on %s. Reason: %s",
                     side.upper(),
@@ -212,7 +274,28 @@ def run_bot_logic():
 
                 # Calculate order cost
                 order_price = market.get(f"{side}_ask")
-                order_count = 1
+                order_count = get_affordable_order_count(
+                    requested_count=requested_count,
+                    order_price=order_price,
+                    available_funds=available_funds,
+                    spending_limit_remaining=spending_limit_remaining,
+                )
+
+                if order_count <= 0:
+                    logger.warning(
+                        "Skipping order for %s: no funds remain within account and spending limits",
+                        ticker,
+                    )
+                    continue
+
+                if order_count < requested_count:
+                    logger.info(
+                        "Reduced requested count for %s from %s to affordable count %s",
+                        ticker,
+                        requested_count,
+                        order_count,
+                    )
+
                 order_cost = spending_tracker.calculate_order_cost(order_count, order_price)
 
                 # Check spending limit
@@ -242,10 +325,13 @@ def run_bot_logic():
 
                     # Update current spending after successful order
                     current_spending += order_cost
+                    available_funds -= order_cost
                     logger.info(
-                        "Order placed successfully: %s. Updated spending: $%.2f",
+                        "Order placed successfully: %s. Updated spending: $%.2f; "
+                        "available funds: $%.2f",
                         order_response,
                         current_spending / 100,
+                        available_funds / 100,
                     )
                 except Exception as trade_err:
                     logger.error(f"Failed to place order for {ticker}: {trade_err}")
@@ -271,4 +357,4 @@ def main(request):
 if __name__ == "__main__":
     # For local testing, ensure env vars are set or load from .env
     load_dotenv()
-    run_bot_logic()
+    run_bot_logic(live=parse_args().live)

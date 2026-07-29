@@ -17,6 +17,9 @@ BY ACCESSING, DOWNLOADING, INSTALLING, OR USING THIS SOFTWARE (THE "SOFTWARE"), 
 4. Ensure you're on Python 3.13.11, and run `pip install -r requirements.txt`.
 5. In the project root, run `python main.py`.
 
+The bot uses the Kalshi demo environment by default. To trade against Kalshi production,
+run `python main.py --live`.
+
 ## New Position Bot design notes
 * Vibe coded: As this bot will use an LLM to make decisions surrounding prediction market trades, it seemed appropriate to also have the LLM write the initial code for the project. The many iterations of prompts used to generate this codebase are found in `/prompts`.
 * Role prompting: The prompt sent to the LLM tells it that it's a professional prediction market trader, in the hopes of enhancing the output quality. 

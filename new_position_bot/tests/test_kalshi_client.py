@@ -172,6 +172,16 @@ def test_get_orders_returns_all_orders_when_no_identifier(mock_kalshi):
         assert len(orders) == 2
 
 
+def test_get_balance_returns_available_funds(mock_kalshi):
+    with patch.object(mock_kalshi, "_request") as mock_req:
+        mock_req.return_value = {"balance": 12500, "portfolio_value": 18000}
+
+        balance = mock_kalshi.get_balance()
+
+        mock_req.assert_called_once_with("GET", "/portfolio/balance")
+        assert balance == 12500
+
+
 def test_get_market_returns_market_detail(mock_kalshi):
     with patch.object(mock_kalshi, "_request") as mock_req:
         mock_req.return_value = {

@@ -105,3 +105,37 @@ def test_analyze_market_no_rules_still_works():
         sent_payload = mock_post.call_args[1]["json"]
         user_message = sent_payload["messages"][1]["content"]
         assert "Settlement Rules" not in user_message
+
+
+def test_analyze_market_asks_for_quantity_with_available_funds():
+    client = GrokClient("api_key")
+    mock_response = {
+        "choices": [
+            {
+                "message": {
+                    "content": '{"ticker": "ABC", "side": "yes", "count": 8, '
+                    '"explanation": "High confidence"}'
+                }
+            }
+        ]
+    }
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = mock_response
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        client.analyze_market(
+            {"ticker": "ABC", "title": "Example", "yes_ask": 25, "no_ask": 75},
+            available_funds_cents=12500,
+            spending_limit_remaining_cents=4000,
+        )
+
+        sent_payload = mock_post.call_args[1]["json"]
+        system_message = sent_payload["messages"][0]["content"]
+        user_message = sent_payload["messages"][1]["content"]
+
+        assert "'count' (positive integer or null)" in system_message
+        assert "Available account funds: $125.00" in user_message
+        assert "Remaining spending allowance: $40.00" in user_message
+        assert "as many contracts as you feel comfortable buying" in user_message

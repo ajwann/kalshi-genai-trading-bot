@@ -101,6 +101,11 @@ class KalshiClient:
         data = self._request("GET", "/portfolio/positions")
         return data.get("market_positions", [])
 
+    def get_balance(self) -> int:
+        """Returns the account balance available for trading, in cents."""
+        data = self._request("GET", "/portfolio/balance")
+        return data.get("balance", 0)
+
     def get_orders(
         self,
         start_time: Optional[datetime] = None,

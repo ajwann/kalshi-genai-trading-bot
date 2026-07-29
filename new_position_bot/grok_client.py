@@ -12,7 +12,13 @@ class GrokClient:
         self.model = model
         self.base_url = "https://api.x.ai/v1/chat/completions"
 
-    def analyze_market(self, market_data: dict, settlement_rules: str = "") -> dict:
+    def analyze_market(
+        self,
+        market_data: dict,
+        settlement_rules: str = "",
+        available_funds_cents: int | None = None,
+        spending_limit_remaining_cents: int | None = None,
+    ) -> dict:
         """
         Sends market data to Grok and asks for a trading decision.
         Returns the JSON parsed response.
@@ -22,6 +28,8 @@ class GrokClient:
             settlement_rules: Pre-formatted settlement rules text to inject
                               into the prompt so Grok understands how the
                               market resolves.
+            available_funds_cents: Account balance available for trading.
+            spending_limit_remaining_cents: Remaining configured spending allowance.
         """
 
         system_prompt = (
@@ -31,8 +39,9 @@ class GrokClient:
             "or choose to pass if there isn't a good trade. "
             "When settlement rules are provided, treat them as the authoritative "
             "definition of how the market resolves. "
-            "Respond ONLY with a valid RFC 8259 JSON object containing exactly three keys: "
+            "Respond ONLY with a valid RFC 8259 JSON object containing exactly four keys: "
             "'ticker' (string or null), 'side' (\"yes\", \"no\", or null), and "
+            "'count' (positive integer or null), and "
             "'explanation' (string or null)."
         )
 
@@ -43,22 +52,34 @@ class GrokClient:
             f"Ticker: {market_data.get('ticker')}\n"
             f"Subtitle: {market_data.get('subtitle')}\n"
             f"Category: {market_data.get('category')}\n"
-            f"Current Yes Price: {market_data.get('yes_ask', 'N/A')}\n\n"
+            f"Current Yes Price: {market_data.get('yes_ask', 'N/A')} cents\n"
+            f"Current No Price: {market_data.get('no_ask', 'N/A')} cents\n"
         )
+
+        if available_funds_cents is not None:
+            user_content += f"Available account funds: ${available_funds_cents / 100:.2f}\n"
+        if spending_limit_remaining_cents is not None:
+            user_content += (
+                "Remaining spending allowance: "
+                f"${spending_limit_remaining_cents / 100:.2f}\n"
+            )
+        user_content += "\n"
 
         if settlement_rules:
             user_content += f"{settlement_rules}\n\n"
 
         user_content += (
-            "If you recommend a trade, return the ticker and which side to buy "
-            "('yes' or 'no'), with a short explanation. "
-            "If you do NOT recommend a trade, return null for ticker and side, "
+            "If you recommend a trade, return the ticker, which side to buy "
+            "('yes' or 'no'), and a count. Based on your certainty and the funds shown, "
+            "choose as many contracts as you feel comfortable buying without exceeding "
+            "either available amount. Include a short explanation. "
+            "If you do NOT recommend a trade, return null for ticker, side, and count, "
             "but still include an explanation.\n\n"
-            "Example Yes Trade: {\"ticker\": \"KX-123\", \"side\": \"yes\", "
+            "Example Yes Trade: {\"ticker\": \"KX-123\", \"side\": \"yes\", \"count\": 8, "
             "\"explanation\": \"Undervalued relative to polling data.\"}\n"
-            "Example No Trade: {\"ticker\": \"KX-456\", \"side\": \"no\", "
+            "Example No Trade: {\"ticker\": \"KX-456\", \"side\": \"no\", \"count\": 3, "
             "\"explanation\": \"Market overestimates probability.\"}\n"
-            "Example Pass: {\"ticker\": null, \"side\": null, "
+            "Example Pass: {\"ticker\": null, \"side\": null, \"count\": null, "
             "\"explanation\": \"Not enough information.\"}"
         )
 
@@ -91,7 +112,7 @@ class GrokClient:
             return json.loads(content)
         except json.JSONDecodeError:
             logger.error(f"Failed to parse Grok response: {content}")
-            return {"ticker": None, "explanation": "JSON Error"}
+            return {"ticker": None, "side": None, "count": None, "explanation": "JSON Error"}
         except Exception as e:
             logger.error(f"Grok API failed: {e}")
-            return {"ticker": None, "explanation": str(e)}
+            return {"ticker": None, "side": None, "count": None, "explanation": str(e)}
